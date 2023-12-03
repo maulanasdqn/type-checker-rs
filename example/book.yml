@@ -1,0 +1,15 @@
+type: object
+properties:
+  id:
+    type: integer
+  title:
+    type: string
+  author:
+    $ref: "./author.yaml" # Mengacu pada definisi Author
+  year:
+    type: integer
+required:
+  - id
+  - title
+  - author
+  - year

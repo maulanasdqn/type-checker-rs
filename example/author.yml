@@ -1,0 +1,12 @@
+type: object
+properties:
+  id:
+    type: integer
+  name:
+    type: string
+  birth_year:
+    type: integer
+required:
+  - name
+  - birth_year
+  - id
