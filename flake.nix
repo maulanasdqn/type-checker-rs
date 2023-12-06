@@ -1,6 +1,5 @@
 {
-  description =
-    "Programa de linha de comando para navegar entre os desafios, corrigí-los e dar dicas";
+  description = "TypeChecker RUST";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.11";
@@ -15,24 +14,24 @@
       };
     in {
       devShells.aarch64-darwin = rec {
-        default = pescarte-desafios;
-        pescarte-desafios = pkgs.mkShell {
-          name = "pescarte-desafios";
+        default = type-checker;
+        type-checker = pkgs.mkShell {
+          name = "type-checker";
           packages = with pkgs; [
+            openssl
             rust-bin.stable.latest.default
             cargo-nextest
-            self.packages.aarch64-darwin.pescarte-desafios
+            rustup
+            self.packages.aarch64-darwin.type-checker
           ];
-          inputsFrom = [ self.packages.aarch64-darwin.pescarte-desafios ];
-          shellHook =
-            ''alias pescarte-desafios="./target/debug/pescarte-desafios"'';
+          inputsFrom = [ self.packages.aarch64-darwin.type-checker ];
         };
       };
 
       packages.aarch64-darwin = rec {
-        default = pescarte-desafios;
-        pescarte-desafios = pkgs.rustPlatform.buildRustPackage {
-          pname = "pescarte-desafios";
+        default = type-checker;
+        type-checker = pkgs.rustPlatform.buildRustPackage {
+          pname = "type-checker";
           version = "v0.1.0";
           doCheck = true;
           src = ./.;
@@ -43,11 +42,6 @@
           ];
           singleStep = true;
           cargoLock = { lockFile = ./Cargo.lock; };
-          meta = with pkgs.lib; {
-            homepage = "htpps://github.com/peapescarte/desafios/blob/main/cli";
-            license = licenses.bsd3;
-            maintainers = [ maintainers.zoedsoupe ];
-          };
         };
       };
     };
