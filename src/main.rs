@@ -1,35 +1,56 @@
-
-use reqwest;
-use std::env;
-use std::fs;
 use tokio;
+use std::fs;
+use std::env;
+use chatgpt::prelude::*;
+
+type Type = std::result::Result<(), Box<dyn std::error::Error>>;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Type {
     let args: Vec<String> = env::args().collect();
     if args.len() < 3 {
         eprintln!("Usage: program <file1> <file2>");
         return Ok(());
     }
-
     let file1_contents = fs::read_to_string(&args[1])?;
     let file2_contents = fs::read_to_string(&args[2])?;
 
-    let api_key = env::var("CHATGPT_API_KEY").expect("CHATGPT_API_KEY not set");
+    let prompt = r#"You are a type checker that help user to check whether the given type definition is compatible with given API Contract.
+                    The user will give several type definitions and corresponding API Contract. You should give list of answers.
+                Example:
+                - There are 4 cases and each case consist of TYPE & API Contract
+                
+                Goal:
+                - Compare the type & API Contract in each case
+                - Show the result of each case in a JSON array format.
+                - Give the reason if the API Contract is not compatible with the type.
+                
+                Expected Output Format:
+                [
+                  {
+                    "result": true,
+                  },
+                  {
+                    "result": false,
+                    "reason": "attribute `x` should be integer."
+                  },
+                  {
+                    "result": true,
+                  },
+                  {
+                    "result": true,
+                  }
+                ]
+                
+                WARNING: please response with the exactly format as described above without any additional information."#;
 
-    let client = reqwest::Client::new();
-    let response = client.post("https://api.openai.com/v1/engines/chatgpt/completions")
-        .bearer_auth(api_key)
-        .json(&serde_json::json!({
-            "prompt": format!("{}\n{}", file1_contents, file2_contents),
-            "max_tokens": 200
-        }))
-        .send()
+    let result = &[prompt, &file1_contents, &file2_contents].concat();
+
+    let key = env::var("OPENAI_API_KEY").expect("Missing OPENAI_API_KEY");
+    let client = ChatGPT::new(key)?;
+    let response = client
+        .send_message(result)
         .await?;
-
-    let response_text = response.text().await?;
-    println!("Response from ChatGPT: {}", response_text);
-
+    println!("Response: {}", response.message().content);
     Ok(())
 }
-
