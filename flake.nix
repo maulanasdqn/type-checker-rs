@@ -2,7 +2,7 @@
   description = "TypeChecker RUST";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     rust-overlay.url = "github:oxalica/rust-overlay";
   };
 
@@ -19,9 +19,8 @@
           name = "type-checker";
           packages = with pkgs; [
             openssl
-            rust-bin.stable.latest.default
+            rust-bin.beta.latest.default
             cargo-nextest
-            rustup
             self.packages.aarch64-darwin.type-checker
           ];
           inputsFrom = [ self.packages.aarch64-darwin.type-checker ];
