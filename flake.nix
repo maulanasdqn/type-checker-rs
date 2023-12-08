@@ -2,7 +2,7 @@
   description = "TypeChecker RUST";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.11";
     rust-overlay.url = "github:oxalica/rust-overlay";
   };
 
@@ -19,8 +19,10 @@
           name = "type-checker";
           packages = with pkgs; [
             openssl
+            fontconfig
             rust-bin.beta.latest.default
             cargo-nextest
+            rustup
             self.packages.aarch64-darwin.type-checker
           ];
           inputsFrom = [ self.packages.aarch64-darwin.type-checker ];
@@ -34,12 +36,12 @@
           version = "v0.1.0";
           doCheck = true;
           src = ./.;
-          nativeBuildInputs = with pkgs.darwin.apple_sdk; [
-            frameworks.CoreFoundation
-            frameworks.CoreServices
-            frameworks.SystemConfiguration
+          nativeBuildInputs = with pkgs.darwin.apple_sdk.frameworks; [
+            Security
+            CoreFoundation
+            CoreServices
+            SystemConfiguration
           ];
-          singleStep = true;
           cargoLock = { lockFile = ./Cargo.lock; };
         };
       };
