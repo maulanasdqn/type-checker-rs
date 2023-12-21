@@ -1,56 +1,50 @@
-use tokio;
-use std::fs;
 use std::env;
-use chatgpt::prelude::*;
+use std::fs;
+use std::path::PathBuf;
+use std::error::Error;
 
-type Type = std::result::Result<(), Box<dyn std::error::Error>>;
+#[derive(Debug)]
+struct FileType {
+    content: String,
+    file_type: String,
+}
 
-#[tokio::main]
-async fn main() -> Type {
+fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
-    if args.len() < 3 {
-        eprintln!("Usage: program <file1> <file2>");
-        return Ok(());
+    let contract_path = args.iter().find(|arg| arg.starts_with("--contract")).unwrap_or(&"".to_string());
+    let type_path = args.iter().find(|arg| arg.starts_with("--type")).unwrap_or(&"".to_string());
+
+    let contract_files = recursive_read_file(PathBuf::from(contract_path))?;
+    let type_files = recursive_read_file(PathBuf::from(type_path))?;
+
+    for file in contract_files.iter().chain(type_files.iter()) {
+        println!("{:?}", file);
     }
-    let file1_contents = fs::read_to_string(&args[1])?;
-    let file2_contents = fs::read_to_string(&args[2])?;
 
-    let prompt = r#"You are a type checker that help user to check whether the given type definition is compatible with given API Contract.
-                    The user will give several type definitions and corresponding API Contract. You should give list of answers.
-                Example:
-                - There are 4 cases and each case consist of TYPE & API Contract
-                
-                Goal:
-                - Compare the type & API Contract in each case
-                - Show the result of each case in a JSON array format.
-                - Give the reason if the API Contract is not compatible with the type.
-                
-                Expected Output Format:
-                [
-                  {
-                    "result": true,
-                  },
-                  {
-                    "result": false,
-                    "reason": "attribute `x` should be integer."
-                  },
-                  {
-                    "result": true,
-                  },
-                  {
-                    "result": true,
-                  }
-                ]
-                
-                WARNING: please response with the exactly format as described above without any additional information."#;
-
-    let result = &[prompt, &file1_contents, &file2_contents].concat();
-
-    let key = env::var("OPENAI_API_KEY").expect("Missing OPENAI_API_KEY");
-    let client = ChatGPT::new(key)?;
-    let response = client
-        .send_message(result)
-        .await?;
-    println!("Response: {}", response.message().content);
     Ok(())
+}
+
+fn get_file_content(file_path: PathBuf) -> Result<FileType, Box<dyn Error>> {
+    let content = fs::read_to_string(file_path.clone())?;
+    let file_type = if file_path.extension().unwrap_or_default() == "ts" {
+        "Typescript Type"
+    } else {
+        "API Contract"
+    };
+
+    Ok(FileType { content, file_type })
+}
+
+fn recursive_read_file(dir_path: PathBuf) -> Result<Vec<FileType>, Box<dyn Error>> {
+    let mut files = Vec::new();
+    for entry in fs::read_dir(dir_path)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_dir() {
+            files.extend(recursive_read_file(path)?);
+        } else {
+            files.push(get_file_content(path)?);
+        }
+    }
+    Ok(files)
 }
